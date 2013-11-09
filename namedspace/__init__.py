@@ -167,9 +167,12 @@ class {typename}(object):
         return field_value
 
     def _validate_field_mutability(self, field_name):
+        if not field_name in self._field_names:
+            raise self.FieldNameError("Field '{{field_name}}' does not exist in {typename} namedspace.".format(
+                    field_name=field_name))
         if not field_name in self._mutable_field_names:
             if self._mutable_field_names:
-                raise self.ReadOnlyFieldError("Field '{{field_name}} of {typename} namedspace is read-only.".format(
+                raise self.ReadOnlyFieldError("Field '{{field_name}}' of {typename} namedspace is read-only.".format(
                         field_name=field_name))
             else:
                 raise self.ReadOnlyNamedspaceError("{typename} namedspace is read-only.")
