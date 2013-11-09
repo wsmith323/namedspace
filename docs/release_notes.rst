@@ -1,8 +1,7 @@
 
-0.0.2
-=====
- * Fix problem in setup.py.
+namedspace release notes
+========================
 
-0.0.1
+1.0.0
 =====
- * First release.
+ * Initial release.
