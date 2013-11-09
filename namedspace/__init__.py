@@ -1,16 +1,40 @@
+"""
+The namedspace factory generates a simple class that encapsulates
+a namespace and provides various means to access it.
 
+It is inspired by namedtuple (and shamelessly copies some of the
+namedtuple code), and was motivated by my realization that I was
+often abusing namedtuple, using it as a base class for simple
+custom classes.
+
+In these cases, it was the named attribute access and immutability of
+the namedtuple that was desirable, and the sequence behavior was not
+needed. In fact, when properties were used to override the returned
+value of a named attribute, the values available from the underlying
+tuple would not match. Fixing this behavior in a sub-class proved much
+more difficult than expected, especially since this is behavior that
+wasn't really needed anyway.
+
+So, namedspace was born. Orginally, I called it "namespace" (without
+the 'd'), but there was already a namespace project on PyPi, and
+calling it "namedspace" gives a nod to its namedtuple ancestry.
+
+Enjoy!
+
+--Warren A. Smith
+"""
 import sys as _sys
 
 from collections import Container
 from collections import Mapping
+from collections import Hashable
+from collections import MutableMapping
 
 from frozendict import frozendict
 
-_class_template = """from collections import Hashable
-from collections import MutableMapping
-
+_class_template = """\
 class {typename}(object):
-    '{typename}({arg_list})'
+    "{typename}({arg_list})"
 
     class FieldNameError(AttributeError, KeyError): pass
     class ReadOnlyNamedspaceError(TypeError): pass
@@ -24,7 +48,7 @@ class {typename}(object):
     _default_value_factories = default_value_factories
 
     def __init__(self, **kwargs):
-        self._field_values = {}
+        self._field_values = dict()
         for field_name, field_value in kwargs.iteritems():
             if field_name in self._field_names:
                 self._field_values[field_name] = field_value
@@ -36,8 +60,12 @@ class {typename}(object):
             if field_value is None:
                 raise ValueError("A value for field '{{field_name}}' is required.".format(field_name=field_name))
 
+    def __repr__(self):
+        'Return a nicely formatted representation string'
+        return '{typename}({{items!r}})'.format(items=self.as_dict())
+
     #
-    # Generic value accessor methods
+    # Generic value access methods
     #
     def _get_value(self, field_name):
         if not field_name in self._field_names:
@@ -66,11 +94,11 @@ class {typename}(object):
                 raise self.ReadOnlyNamedspaceError("{typename} namedspace is read-only.")
 
     def _set_value(self, field_name, field_value):
-        self._validate_field_mutability(self, field_name)
+        self._validate_field_mutability(field_name)
         self._field_values[field_name] = field_value
 
     def _del_value(self, field_name):
-        self._validate_field_mutability(self, field_name)
+        self._validate_field_mutability(field_name)
         del self._field_values[field_name]
 
     #
@@ -90,41 +118,35 @@ class {typename}(object):
         return self._get_value(attr_name)
 
     def __setattr__(self, attr_name, attr_value):
-        return self._set_value(attr_name, attr_value)
+        if attr_name == "_field_values":
+            return super({typename}, self).__setattr__(attr_name, attr_value)
+        else:
+            return self._set_value(attr_name, attr_value)
 
     def __delattr__(self, attr_name):
         return self._del_value(attr_name)
 
     #
-    # Container API
-    #
-    def __contains__(self, name):
-        return name in self.field_names()
-
-    #
     # Hashable API
     #
-    def __hash__(self)
+    def __hash__(self):
         if self._mutable_field_names:
             raise self.MutableNamedspaceError("Mutable {typename} namedspace instance is not hashable.")
         else:
             return hash(self.values())
 
     #
-    # Iterable API
+    # MutableMapping API
     #
+    def __contains__(self, name):
+        return name in self.field_names()
+
     def __iter__(self):
         return iter(self.field_names())
 
-    #
-    # Sized API
-    #
     def __len__(self):
         return len(self.itervalues())
 
-    #
-    # MutableMapping API
-    #
     def __getitem__(self, item_name):
         return self._get_value(item_name)
 
@@ -157,25 +179,26 @@ class {typename}(object):
     def values(self):
         return frozenset(self.itervalues())
 
-    def __repr__(self):
-        'Return a nicely formatted representation string'
-        return '{typename}({{items!r}})'.format(items=self.as_dict())
-
 Hashable.register({typename})
 MutableMapping.register({typename})
-
 """
 
-def namedspace(typename, **kwargs):
-    """Returns a new namedspace class.
+
+def namedspace(typename, required_field_names=(), **kwargs):
+    """Builds a new namedspace class.
     """
+
+    # Initialize the list of arguments that will get put into the
+    # doc string of the generated class
+    arg_list_items = []
+
+    # Inject required_field_names into kwargs so they can be processed
+    # just like the other more anonymous keyword arguments.
+    kwargs["required_field_names"] = required_field_names
 
     #
     # Validate parameters
     #
-
-    arg_list_items = []
-
     for arg_name in ("required_field_names", "optional_field_names", "mutable_field_names"):
         arg_value = kwargs.setdefault(arg_name, ())
 
@@ -194,7 +217,7 @@ def namedspace(typename, **kwargs):
             raise ValueError("Value for argument '{arg_name}' contains duplicate field names.".format(
                     arg_name=arg_name))
 
-        arg_list_items = "{arg_name}={arg_value!r}".format(arg_name=arg_name, arg_value=arg_value)
+        arg_list_items.append("{arg_name}={arg_value!r}".format(arg_name=arg_name, arg_value=tuple(arg_value)))
 
     required_field_names = frozenset(kwargs["required_field_names"])
     optional_field_names = frozenset(kwargs["optional_field_names"])
@@ -217,7 +240,7 @@ def namedspace(typename, **kwargs):
             raise ValueError("Value for argument '{arg_name}' contains invalid field name(s) '{field_names}'.".format(
                     arg_name=arg_name, field_names=", ".join(bad_default_field_names)))
 
-        arg_list_items = "{arg_name}={arg_value!r}".format(arg_name=arg_name, arg_value=arg_value)
+        arg_list_items.append("{arg_name}={arg_value!r}".format(arg_name=arg_name, arg_value=dict(arg_value)))
 
     default_values = frozendict(kwargs["default_values"])
 
@@ -228,9 +251,9 @@ def namedspace(typename, **kwargs):
 
     # Fill-in the class template
     class_definition = _class_template.format(
-        typename = typename,
-        arg_list = ", ".join(arg_list_items),
-    )
+        typename=typename,
+        arg_list=", ".join(arg_list_items),
+        )
 
     # Execute the template string in a temporary namespace and support
     # tracing utilities by setting a value for frame.f_globals['__name__']
@@ -241,7 +264,13 @@ def namedspace(typename, **kwargs):
         mutable_field_names=mutable_field_names,
         default_values=default_values,
         default_value_factories=default_value_factories,
+        Hashable=Hashable,
+        MutableMapping=MutableMapping,
         )
+
+    #
+    # Code from here down copied verbatim from namedtuple
+    #
     try:
         exec class_definition in namespace
     except SyntaxError as e:
@@ -258,4 +287,3 @@ def namedspace(typename, **kwargs):
         pass
 
     return result
-

@@ -18,4 +18,5 @@ setup(
     keywords = "namedspace namespace",
     url = "https://github.com/wsmith323/namedspace",
     test_suite = "namedspace.tests",
+    tests_require=["mock"],
 )
