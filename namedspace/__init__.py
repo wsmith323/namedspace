@@ -1,28 +1,4 @@
-"""
-The namedspace factory generates a simple class that encapsulates
-a namespace and provides various means to access it.
 
-It is inspired by namedtuple (and shamelessly copies some of the
-namedtuple code), and was motivated by my realization that I was
-often abusing namedtuple, using it as a base class for simple
-custom classes.
-
-In these cases, it was the named attribute access and immutability of
-the namedtuple that was desirable, and the sequence behavior was not
-needed. In fact, when properties were used to override the returned
-value of a named attribute, the values available from the underlying
-tuple would not match. Fixing this behavior in a sub-class proved much
-more difficult than expected, especially since this is behavior that
-wasn't really needed anyway.
-
-So, namedspace was born. Orginally, I called it "namespace" (without
-the 'd'), but there was already a namespace project on PyPi, and
-calling it "namedspace" gives a nod to its namedtuple ancestry.
-
-Enjoy!
-
---Warren A. Smith
-"""
 import sys as _sys
 
 from collections import Container
@@ -31,6 +7,111 @@ from collections import Hashable
 from collections import MutableMapping
 
 from frozendict import frozendict
+
+
+def namedspace(typename, required_field_names=(), **kwargs):
+    """Builds a new namedspace class.
+    """
+
+    # Initialize the list of arguments that will get put into the
+    # doc string of the generated class
+    arg_list_items = []
+
+    # Inject required_field_names into kwargs so they can be processed
+    # just like the other more anonymous keyword arguments.
+    kwargs["required_field_names"] = required_field_names
+
+    #
+    # Validate parameters
+    #
+    for arg_name in ("required_field_names", "optional_field_names", "mutable_field_names"):
+        arg_value = kwargs.setdefault(arg_name, ())
+
+        if isinstance(arg_value, basestring):
+            arg_value = (arg_value,)
+            kwargs[arg_name] = arg_value
+        elif not isinstance(arg_value, Container):
+            raise ValueError("Value for argument '{arg_name}' must be a string or container of strings.".format(
+                    arg_name=arg_name))
+
+        for field_name in arg_value:
+            if not isinstance(field_name, basestring):
+                raise ValueError("Items of container argument '{arg_name}' must be strings.".format(arg_name=arg_name))
+
+        if len(arg_value) != len(frozenset(arg_value)):
+            raise ValueError("Value for argument '{arg_name}' contains duplicate field names.".format(
+                    arg_name=arg_name))
+
+        arg_list_items.append("{arg_name}={arg_value!r}".format(arg_name=arg_name, arg_value=tuple(arg_value)))
+
+    required_field_names = frozenset(kwargs["required_field_names"])
+    optional_field_names = frozenset(kwargs["optional_field_names"])
+    field_names = required_field_names.union(optional_field_names)
+
+    mutable_field_names = kwargs["mutable_field_names"]
+    for field_name in mutable_field_names:
+        if field_name not in field_names:
+            raise ValueError("Mutable field name '{field_name}' is not a required or optional field name.".format(
+                    field_name=field_name))
+
+    for arg_name in ("default_values", "default_value_factories"):
+        arg_value = kwargs.setdefault(arg_name, {})
+        if not isinstance(arg_value, Mapping):
+            raise ValueError("Value for argument '{arg_name}' must be a mapping.".format(arg_name=arg_name))
+
+        default_field_names = frozenset(arg_value.iterkeys())
+        if not default_field_names.issubset(field_names):
+            bad_default_field_names = default_field_names - field_names
+            raise ValueError("Value for argument '{arg_name}' contains invalid field name(s) '{field_names}'.".format(
+                    arg_name=arg_name, field_names=", ".join(bad_default_field_names)))
+
+        arg_list_items.append("{arg_name}={arg_value!r}".format(arg_name=arg_name, arg_value=dict(arg_value)))
+
+    default_values = frozendict(kwargs["default_values"])
+
+    default_value_factories = frozendict(kwargs["default_value_factories"])
+    for field_name, factory in default_value_factories.iteritems():
+        if not callable(factory):
+            raise ValueError("Default value factory for '{field_name}' is not callable.".format(field_name=field_name))
+
+    # Fill-in the class template
+    class_definition = _class_template.format(
+        typename=typename,
+        arg_list=", ".join(arg_list_items),
+        )
+
+    # Execute the template string in a temporary namespace and support
+    # tracing utilities by setting a value for frame.f_globals['__name__']
+    namespace = dict(
+        __name__='namedspace_{typename}'.format(typename=typename),
+        field_names=field_names,
+        required_field_names=required_field_names,
+        mutable_field_names=mutable_field_names,
+        default_values=default_values,
+        default_value_factories=default_value_factories,
+        Hashable=Hashable,
+        MutableMapping=MutableMapping,
+        )
+
+    #
+    # Code from here down copied verbatim from namedtuple
+    #
+    try:
+        exec class_definition in namespace
+    except SyntaxError as e:
+        raise SyntaxError(e.message + ':\n' + class_definition)
+    result = namespace[typename]
+
+    # For pickling to work, the __module__ variable needs to be set to the frame
+    # where the named tuple is created.  Bypass this step in enviroments where
+    # sys._getframe is not defined (Jython for example) or sys._getframe is not
+    # defined for arguments greater than 0 (IronPython).
+    try:
+        result.__module__ = _sys._getframe(1).f_globals.get('__name__', '__main__')
+    except (AttributeError, ValueError):
+        pass
+
+    return result
 
 _class_template = """\
 class {typename}(object):
@@ -182,108 +263,3 @@ class {typename}(object):
 Hashable.register({typename})
 MutableMapping.register({typename})
 """
-
-
-def namedspace(typename, required_field_names=(), **kwargs):
-    """Builds a new namedspace class.
-    """
-
-    # Initialize the list of arguments that will get put into the
-    # doc string of the generated class
-    arg_list_items = []
-
-    # Inject required_field_names into kwargs so they can be processed
-    # just like the other more anonymous keyword arguments.
-    kwargs["required_field_names"] = required_field_names
-
-    #
-    # Validate parameters
-    #
-    for arg_name in ("required_field_names", "optional_field_names", "mutable_field_names"):
-        arg_value = kwargs.setdefault(arg_name, ())
-
-        if isinstance(arg_value, basestring):
-            arg_value = (arg_value,)
-            kwargs[arg_name] = arg_value
-        elif not isinstance(arg_value, Container):
-            raise ValueError("Value for argument '{arg_name}' must be a string or container of strings.".format(
-                    arg_name=arg_name))
-
-        for field_name in arg_value:
-            if not isinstance(field_name, basestring):
-                raise ValueError("Items of container argument '{arg_name}' must be strings.".format(arg_name=arg_name))
-
-        if len(arg_value) != len(frozenset(arg_value)):
-            raise ValueError("Value for argument '{arg_name}' contains duplicate field names.".format(
-                    arg_name=arg_name))
-
-        arg_list_items.append("{arg_name}={arg_value!r}".format(arg_name=arg_name, arg_value=tuple(arg_value)))
-
-    required_field_names = frozenset(kwargs["required_field_names"])
-    optional_field_names = frozenset(kwargs["optional_field_names"])
-    field_names = required_field_names.union(optional_field_names)
-
-    mutable_field_names = kwargs["mutable_field_names"]
-    for field_name in mutable_field_names:
-        if field_name not in field_names:
-            raise ValueError("Mutable field name '{field_name}' is not a required or optional field name.".format(
-                    field_name=field_name))
-
-    for arg_name in ("default_values", "default_value_factories"):
-        arg_value = kwargs.setdefault(arg_name, {})
-        if not isinstance(arg_value, Mapping):
-            raise ValueError("Value for argument '{arg_name}' must be a mapping.".format(arg_name=arg_name))
-
-        default_field_names = frozenset(arg_value.iterkeys())
-        if not default_field_names.issubset(field_names):
-            bad_default_field_names = default_field_names - field_names
-            raise ValueError("Value for argument '{arg_name}' contains invalid field name(s) '{field_names}'.".format(
-                    arg_name=arg_name, field_names=", ".join(bad_default_field_names)))
-
-        arg_list_items.append("{arg_name}={arg_value!r}".format(arg_name=arg_name, arg_value=dict(arg_value)))
-
-    default_values = frozendict(kwargs["default_values"])
-
-    default_value_factories = frozendict(kwargs["default_value_factories"])
-    for field_name, factory in default_value_factories.iteritems():
-        if not callable(factory):
-            raise ValueError("Default value factory for '{field_name}' is not callable.".format(field_name=field_name))
-
-    # Fill-in the class template
-    class_definition = _class_template.format(
-        typename=typename,
-        arg_list=", ".join(arg_list_items),
-        )
-
-    # Execute the template string in a temporary namespace and support
-    # tracing utilities by setting a value for frame.f_globals['__name__']
-    namespace = dict(
-        __name__='namedspace_{typename}'.format(typename=typename),
-        field_names=field_names,
-        required_field_names=required_field_names,
-        mutable_field_names=mutable_field_names,
-        default_values=default_values,
-        default_value_factories=default_value_factories,
-        Hashable=Hashable,
-        MutableMapping=MutableMapping,
-        )
-
-    #
-    # Code from here down copied verbatim from namedtuple
-    #
-    try:
-        exec class_definition in namespace
-    except SyntaxError as e:
-        raise SyntaxError(e.message + ':\n' + class_definition)
-    result = namespace[typename]
-
-    # For pickling to work, the __module__ variable needs to be set to the frame
-    # where the named tuple is created.  Bypass this step in enviroments where
-    # sys._getframe is not defined (Jython for example) or sys._getframe is not
-    # defined for arguments greater than 0 (IronPython).
-    try:
-        result.__module__ = _sys._getframe(1).f_globals.get('__name__', '__main__')
-    except (AttributeError, ValueError):
-        pass
-
-    return result
