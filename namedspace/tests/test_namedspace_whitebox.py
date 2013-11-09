@@ -12,13 +12,13 @@ class NamedspaceTests(TestCase):
         cls.mock_default_factory = staticmethod(lambda ns: cls.mock_name_template.format(id=ns.id))
         cls.mock_id = "mock_id"
 
-        cls.TestNamedspace1 = namedspace("TestNamedspace1", "id", optional_field_names=("name", "description", "extra"),
-                mutable_field_names=("name", "description"), default_values={"extra": cls.mock_default_value},
+        cls.TestNamedspace1 = namedspace("TestNamedspace1", "id", optional_fields=("name", "description", "extra"),
+                mutable_fields=("name", "description"), default_values={"extra": cls.mock_default_value},
                 default_value_factories={"name": cls.mock_default_factory})
         cls.test_ns1 = cls.TestNamedspace1(id=cls.mock_id)
 
-        cls.TestNamedspace2 = namedspace("TestNamedspace2", "id", optional_field_names="name",
-                                     default_value_factories={"name": cls.mock_default_factory})
+        cls.TestNamedspace2 = namedspace("TestNamedspace2", "id", optional_fields="name",
+                default_value_factories={"name": cls.mock_default_factory})
         cls.test_ns2 = cls.TestNamedspace2(id=cls.mock_id)
 
     def test_missing_required_fields(self):
