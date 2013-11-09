@@ -11,6 +11,8 @@ from frozendict import frozendict
 
 def namedspace(typename, required_field_names=(), **kwargs):
     """Builds a new namedspace class.
+
+
     """
 
     # Initialize the list of arguments that will get put into the
@@ -46,11 +48,11 @@ def namedspace(typename, required_field_names=(), **kwargs):
 
     required_field_names = frozenset(kwargs["required_field_names"])
     optional_field_names = frozenset(kwargs["optional_field_names"])
-    field_names = required_field_names.union(optional_field_names)
+    all_field_names = required_field_names.union(optional_field_names)
 
     mutable_field_names = kwargs["mutable_field_names"]
     for field_name in mutable_field_names:
-        if field_name not in field_names:
+        if field_name not in all_field_names:
             raise ValueError("Mutable field name '{field_name}' is not a required or optional field name.".format(
                     field_name=field_name))
 
@@ -60,8 +62,8 @@ def namedspace(typename, required_field_names=(), **kwargs):
             raise ValueError("Value for argument '{arg_name}' must be a mapping.".format(arg_name=arg_name))
 
         default_field_names = frozenset(arg_value.iterkeys())
-        if not default_field_names.issubset(field_names):
-            bad_default_field_names = default_field_names - field_names
+        if not default_field_names.issubset(all_field_names):
+            bad_default_field_names = default_field_names - all_field_names
             raise ValueError("Value for argument '{arg_name}' contains invalid field name(s) '{field_names}'.".format(
                     arg_name=arg_name, field_names=", ".join(bad_default_field_names)))
 
@@ -84,7 +86,7 @@ def namedspace(typename, required_field_names=(), **kwargs):
     # tracing utilities by setting a value for frame.f_globals['__name__']
     namespace = dict(
         __name__='namedspace_{typename}'.format(typename=typename),
-        field_names=field_names,
+        all_field_names=all_field_names,
         required_field_names=required_field_names,
         mutable_field_names=mutable_field_names,
         default_values=default_values,
@@ -122,24 +124,32 @@ class {typename}(object):
     class ReadOnlyFieldError(TypeError): pass
     class MutableNamedspaceError(TypeError): pass
 
-    _field_names = field_names
+    _all_field_names = all_field_names
     _required_field_names = required_field_names
     _mutable_field_names = mutable_field_names
     _default_values = default_values
     _default_value_factories = default_value_factories
 
     def __init__(self, **kwargs):
-        self._field_values = dict()
+        self._field_value_storage = dict()
+
         for field_name, field_value in kwargs.iteritems():
-            if field_name in self._field_names:
-                self._field_values[field_name] = field_value
+            if field_name in self._all_field_names:
+                self._field_value_storage[field_name] = field_value
             else:
                 raise ValueError("Field name '{{field_name}} does not exist in the {typename} namedspace.".format(
                         field_name=field_name))
-        for field_name in self._required_field_names:
-            field_value = self._field_values.get(field_name)
-            if field_value is None:
+
+        for field_name in self._all_field_names:
+            try:
+                field_value = self._get_value(field_name)
+            except self.FieldNameError:
+                field_value = None
+
+            if field_value in (None, "") and field_name in self._required_field_names:
                 raise ValueError("A value for field '{{field_name}}' is required.".format(field_name=field_name))
+            elif not field_name in self._field_value_storage:
+                self._field_value_storage[field_name] = field_value
 
     def __repr__(self):
         'Return a nicely formatted representation string'
@@ -149,11 +159,11 @@ class {typename}(object):
     # Generic value access methods
     #
     def _get_value(self, field_name):
-        if not field_name in self._field_names:
+        if not field_name in self._all_field_names:
             raise self.FieldNameError("Field name '{{field_name}}' does not exist in the {typename} namedspace.".format(
                     field_name=field_name))
 
-        field_value = self._field_values.get(field_name)
+        field_value = self._field_value_storage.get(field_name)
         if field_value is None:
             field_value = self._default_values.get(field_name)
             if field_value is None:
@@ -167,7 +177,7 @@ class {typename}(object):
         return field_value
 
     def _validate_field_mutability(self, field_name):
-        if not field_name in self._field_names:
+        if not field_name in self._all_field_names:
             raise self.FieldNameError("Field '{{field_name}}' does not exist in {typename} namedspace.".format(
                     field_name=field_name))
         if not field_name in self._mutable_field_names:
@@ -179,30 +189,57 @@ class {typename}(object):
 
     def _set_value(self, field_name, field_value):
         self._validate_field_mutability(field_name)
-        self._field_values[field_name] = field_value
+        self._field_value_storage[field_name] = field_value
 
     def _del_value(self, field_name):
         self._validate_field_mutability(field_name)
-        del self._field_values[field_name]
+        del self._field_value_storage[field_name]
 
     #
     # Namedspace API
     #
-    def field_names(self):
-        return self._field_names
+    @property
+    def _field_names(self):
+        return self._all_field_names
 
-    def as_dict(self):
+    @property
+    def _field_names_iter(self):
+        return iter(self._all_field_names)
+
+    @property
+    def _field_values_iter(self):
+        for field_name in self._all_field_names:
+            yield getattr(self, field_name, None)
+
+    @property
+    def _field_values(self):
+        return tuple(self._field_values_iter)
+
+    @property
+    def _field_items_iter(self):
+        for field_name in self._all_field_names:
+            yield (field_name, getattr(self, field_name, None))
+
+    @property
+    def _field_items(self):
+        return frozenset(self._field_items_iter)
+
+    @property
+    def _as_dict(self):
         'Return a the namedspace values as a new dictionary.'
-        return dict(self.iteritems())
+        return dict(self._field_items_iter)
 
     #
     # Attribute API
     #
     def __getattr__(self, attr_name):
-        return self._get_value(attr_name)
+        try:
+            return self._get_value(attr_name)
+        except self.FieldNameError as e:
+            raise AttributeError(str(e))
 
     def __setattr__(self, attr_name, attr_value):
-        if attr_name == "_field_values":
+        if attr_name == "_field_value_storage":
             return super({typename}, self).__setattr__(attr_name, attr_value)
         else:
             return self._set_value(attr_name, attr_value)
@@ -217,22 +254,25 @@ class {typename}(object):
         if self._mutable_field_names:
             raise self.MutableNamedspaceError("Mutable {typename} namedspace instance is not hashable.")
         else:
-            return hash(self.values())
+            return hash(self._field_values)
 
     #
     # MutableMapping API
     #
     def __contains__(self, name):
-        return name in self.field_names()
+        return name in self._field_names
 
     def __iter__(self):
-        return iter(self.field_names())
+        return self._field_names_iter
 
     def __len__(self):
-        return len(self.itervalues())
+        return len(self._field_values_iter)
 
     def __getitem__(self, item_name):
-        return self._get_value(item_name)
+        try:
+            return self._get_value(item_name)
+        except self.FieldNameError as e:
+            raise KeyError(str(e))
 
     def __setitem__(self, item_name, item_value):
         return self._set_value(item_name, item_value)
@@ -240,28 +280,6 @@ class {typename}(object):
     def __delitem__(self, item_name):
         return self._del_value(item_name)
 
-    #
-    # Dictionary API
-    #
-    def iteritems(self):
-        for field_name in self.field_names():
-            yield (field_name, getattr(self, field_name))
-
-    def iterkeys(self):
-        return self.iternames()
-
-    def itervalues(self):
-        for field_name in self.field_names():
-            yield getattr(self, field_name)
-
-    def items(self):
-        return frozenset(self.iteritems())
-
-    def keys(self):
-        return self.names()
-
-    def values(self):
-        return frozenset(self.itervalues())
 
 Hashable.register({typename})
 MutableMapping.register({typename})
