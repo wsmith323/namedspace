@@ -10,7 +10,7 @@ setup(
     name = "namedspace",
     version = __version__,
     packages = find_packages(),
-
+    install_requires = ["frozendict"],
     author = "Warren A. Smith",
     author_email = "warren@wandrsmith.net",
     description = file_read("README.md"),
