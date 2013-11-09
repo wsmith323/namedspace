@@ -6,8 +6,8 @@ a namespace and provides various means to access it.
 
 It is inspired by namedtuple (and shamelessly copies some of the
 namedtuple code), and was motivated by my realization that I was
-often abusing namedtuple, using a namedtuple a base class for simple
-numerous custom classes that I was writing.
+often abusing namedtuple, using a namedtuple as a base class for
+numerous simple custom classes that I was writing.
 
 In these cases, it was the named attribute access and immutability of
 the namedtuple that was desirable, and the sequence behavior was not

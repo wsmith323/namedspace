@@ -3,7 +3,7 @@ import os
 
 from setuptools import setup, find_packages
 
-__version__ = "0.0.2"
+__version__ = "0.0.3"
 
 def file_read(filename):
     filepath = os.path.join(os.path.dirname(__file__), filename)
@@ -17,7 +17,8 @@ setup(
     install_requires = ["frozendict"],
     author = "Warren A. Smith",
     author_email = "warren@wandrsmith.net",
-    description = file_read("README.md"),
+    description = "Namespace class factory.",
+    long_description = file_read("README.md"),
     license = "PSF",
     keywords = "namedspace namespace",
     url = "https://github.com/wsmith323/namedspace",
