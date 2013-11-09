@@ -6,7 +6,7 @@ from setuptools import setup, find_packages
 __version__ = "0.0.1"
 
 def file_read(filename):
-    filepath = os.join(os.path.dirname(__file__), filename)
+    filepath = os.path.join(os.path.dirname(__file__), filename)
     with open(filepath) as flo:
         return flo.read()
 
