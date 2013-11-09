@@ -3,7 +3,7 @@ import os
 
 from setuptools import setup, find_packages
 
-__version__ = "0.0.3"
+__version__ = "0.0.4"
 
 def file_read(filename):
     filepath = os.path.join(os.path.dirname(__file__), filename)
