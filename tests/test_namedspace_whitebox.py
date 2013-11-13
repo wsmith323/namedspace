@@ -95,7 +95,7 @@ class NamedspaceTests(TestCase):
         """
         The _field_names property should return the correct values.
         """
-        self.assertEqual(self.test_ns1._field_names, frozenset(("id", "name", "description", "extra")))
+        self.assertEqual(self.test_ns1._field_names, ("id", "name", "description", "extra"))
 
     def test_field_values(self):
         """
@@ -112,12 +112,12 @@ class NamedspaceTests(TestCase):
         """
         The _field_items property should return the correct values.
         """
-        self.assertEqual(self.test_ns1._field_items, frozenset((
+        self.assertEqual(self.test_ns1._field_items, [
                 ("id", self.test_ns1.id),
                 ("name", self.test_ns1.name),
                 ("description", getattr(self.test_ns1, "description", None)),
                 ("extra", self.test_ns1.extra),
-            )))
+            ])
 
 
 class SubNamedspace(namedspace("_SubNamedspace", ("id", "name"))):
