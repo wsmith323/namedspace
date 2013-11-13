@@ -3,7 +3,7 @@ import os
 
 from setuptools import setup, find_packages
 
-__version__ = "1.0.0"
+__version__ = "1.0.1"
 
 def file_read(filename):
     filepath = os.path.join(os.path.dirname(__file__), filename)
@@ -22,5 +22,5 @@ setup(
     license = "PSF",
     keywords = "namedspace namespace",
     url = "https://github.com/wsmith323/namedspace",
-    test_suite = "namedspace.tests",
+    test_suite = "tests",
 )
