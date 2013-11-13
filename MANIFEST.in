@@ -1,5 +1,4 @@
 include README.md
 include release_notes.rst
-include namedspace.py
 recursive-include docs *
-prune docs/_build
+recursive-exclude docs/_build *
