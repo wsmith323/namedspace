@@ -1,0 +1,562 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>namedspace &mdash; namedspace 1.0.1 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '1.0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="top" title="namedspace 1.0.1 documentation" href="../index.html" />
+    <link rel="up" title="Module code" href="index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../index.html">namedspace 1.0.1 documentation</a> &raquo;</li>
+          <li><a href="index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for namedspace</h1><div class="highlight"><pre>
+<span class="kn">import</span> <span class="nn">sys</span> <span class="kn">as</span> <span class="nn">_sys</span>
+
+<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">Container</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">Hashable</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">Mapping</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">MutableMapping</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">OrderedDict</span>
+
+<span class="kn">from</span> <span class="nn">frozendict</span> <span class="kn">import</span> <span class="n">frozendict</span>
+
+
+<span class="k">def</span> <span class="nf">namedspace</span><span class="p">(</span><span class="n">typename</span><span class="p">,</span> <span class="n">required_fields</span><span class="o">=</span><span class="p">(),</span> <span class="n">optional_fields</span><span class="o">=</span><span class="p">(),</span> <span class="n">mutable_fields</span><span class="o">=</span><span class="p">(),</span> <span class="n">default_values</span><span class="o">=</span><span class="n">frozendict</span><span class="p">(),</span>
+<div class="viewcode-block" id="namedspace"><a class="viewcode-back" href="../namedspace.html#namedspace.namedspace">[docs]</a>               <span class="n">default_value_factories</span><span class="o">=</span><span class="n">frozendict</span><span class="p">()):</span>
+    <span class="sd">&quot;&quot;&quot;Builds a new class that encapsulates a namespace and provides</span>
+<span class="sd">    various ways to access it.</span>
+
+
+<span class="sd">    The first argument is the name of the namedspace class that will be</span>
+<span class="sd">    generated.</span>
+
+<span class="sd">    The second argument is a string or sequence of strings that provide</span>
+<span class="sd">    the required fields that instances of the namespace must have.</span>
+
+<span class="sd">    Here is a simple example:</span>
+
+<span class="sd">    &gt;&gt;&gt; SimpleNS = namedspace(&quot;SimpleNS&quot;, (&quot;id&quot;, &quot;name&quot;, &quot;description&quot;))</span>
+
+<span class="sd">    &gt;&gt;&gt; SimpleNS</span>
+<span class="sd">    &lt;class &#39;namedspace.SimpleNS&#39;&gt;</span>
+
+
+<span class="sd">    Once the class has been created, it can be instantiated like any</span>
+<span class="sd">    other class. However, a value for all of the required fields must</span>
+<span class="sd">    be provided.</span>
+
+<span class="sd">    &gt;&gt;&gt; simple_ns = SimpleNS(id=1, description=&quot;Simple Description&quot;)</span>
+<span class="sd">    Traceback (most recent call last):</span>
+<span class="sd">        &lt;snip/&gt;</span>
+<span class="sd">    ValueError: A value for field &#39;name&#39; is required.</span>
+
+<span class="sd">    &gt;&gt;&gt; simple_ns = SimpleNS(id=1, name=&quot;Simple Name&quot;, description=&quot;Simple Description&quot;)</span>
+
+<span class="sd">    &gt;&gt;&gt; simple_ns</span>
+<span class="sd">    SimpleNS(id=1, name=&#39;Simple Name&#39;, description=&#39;Simple Description&#39;)</span>
+
+
+<span class="sd">    An instance of a namedspace class provides standard attribute</span>
+<span class="sd">    access to its fields.</span>
+
+<span class="sd">    &gt;&gt;&gt; simple_ns.id</span>
+<span class="sd">    1</span>
+<span class="sd">    </span>
+<span class="sd">    &gt;&gt;&gt; simple_ns.name</span>
+<span class="sd">    &#39;Simple Name&#39;</span>
+<span class="sd">    </span>
+<span class="sd">    &gt;&gt;&gt; simple_ns.description</span>
+<span class="sd">    &#39;Simple Description&#39;</span>
+
+
+<span class="sd">    In addition to standard attribute access, instances of a namedspace</span>
+<span class="sd">    class implement a MutableMapping interface.</span>
+
+<span class="sd">    &gt;&gt;&gt; &#39;id&#39; in simple_ns</span>
+<span class="sd">    True</span>
+
+<span class="sd">    &gt;&gt;&gt; for field_name in simple_ns:</span>
+<span class="sd">    ...     print field_name</span>
+<span class="sd">    id</span>
+<span class="sd">    name</span>
+<span class="sd">    description</span>
+
+<span class="sd">    &gt;&gt;&gt; len(simple_ns)</span>
+<span class="sd">    3</span>
+
+<span class="sd">    &gt;&gt;&gt; simple_ns[&quot;id&quot;]</span>
+<span class="sd">    1</span>
+
+<span class="sd">    &gt;&gt;&gt; simple_ns[&quot;name&quot;]</span>
+<span class="sd">    &#39;Simple Name&#39;</span>
+
+<span class="sd">    &gt;&gt;&gt; simple_ns[&quot;description&quot;]</span>
+<span class="sd">    &#39;Simple Description&#39;</span>
+
+
+<span class="sd">    There are built in properties to access collections and iterators</span>
+<span class="sd">    associated with the namespace.</span>
+
+<span class="sd">    The namespace encapsulated by a namedspace class is stored in an</span>
+<span class="sd">    OrderedDict, so order of the collections is same as the order that</span>
+<span class="sd">    the fields were specified.</span>
+
+<span class="sd">    All of these properties use the standard &quot;protected&quot; naming</span>
+<span class="sd">    convention in order to not pollute the public namespace.</span>
+
+<span class="sd">    &gt;&gt;&gt; simple_ns._field_names</span>
+<span class="sd">    (&#39;id&#39;, &#39;name&#39;, &#39;description&#39;)</span>
+
+<span class="sd">    &gt;&gt;&gt; tuple(simple_ns._field_names_iter)</span>
+<span class="sd">    (&#39;id&#39;, &#39;name&#39;, &#39;description&#39;)</span>
+
+<span class="sd">    &gt;&gt;&gt; simple_ns._field_values</span>
+<span class="sd">    (1, &#39;Simple Name&#39;, &#39;Simple Description&#39;)</span>
+
+<span class="sd">    &gt;&gt;&gt; tuple(simple_ns._field_values_iter)</span>
+<span class="sd">    (1, &#39;Simple Name&#39;, &#39;Simple Description&#39;)</span>
+
+<span class="sd">    &gt;&gt;&gt; simple_ns._field_items</span>
+<span class="sd">    [(&#39;id&#39;, 1), (&#39;name&#39;, &#39;Simple Name&#39;), (&#39;description&#39;, &#39;Simple Description&#39;)]</span>
+
+<span class="sd">    &gt;&gt;&gt; list(simple_ns._field_items_iter)</span>
+<span class="sd">    [(&#39;id&#39;, 1), (&#39;name&#39;, &#39;Simple Name&#39;), (&#39;description&#39;, &#39;Simple Description&#39;)]</span>
+
+<span class="sd">    &gt;&gt;&gt; simple_ns._as_dict</span>
+<span class="sd">    OrderedDict([(&#39;id&#39;, 1), (&#39;name&#39;, &#39;Simple Name&#39;), (&#39;description&#39;, &#39;Simple Description&#39;)])</span>
+
+
+<span class="sd">    The namedspace factory has several additional arguments that expand</span>
+<span class="sd">    the functionality of the generated class.</span>
+
+<span class="sd">    To illustrate these, here is a more complex example:</span>
+
+<span class="sd">    &gt;&gt;&gt; from itertools import count</span>
+
+<span class="sd">    &gt;&gt;&gt; ComplexNS = namedspace(&quot;ComplexNS&quot;, &quot;id&quot;, optional_fields=(&quot;name&quot;, &quot;description&quot;, &quot;extra&quot;),</span>
+<span class="sd">    ...     mutable_fields=(&quot;description&quot;, &quot;extra&quot;), default_values={&quot;description&quot;: &quot;None available&quot;},</span>
+<span class="sd">    ...     default_value_factories={&quot;id&quot;: lambda self, counter=count(start=1): counter.next(),</span>
+<span class="sd">    ...         &quot;name&quot;: lambda self: &quot;Name for id={id}&quot;.format(id=self.id)})</span>
+
+<span class="sd">    &gt;&gt;&gt; complex_ns1 = ComplexNS()</span>
+
+<span class="sd">    &gt;&gt;&gt; complex_ns1.id</span>
+<span class="sd">    1</span>
+
+<span class="sd">    The value of 1 was automatically assigned by the</span>
+<span class="sd">    default_value_factory for the &#39;id&#39; field, in this case a lambda</span>
+<span class="sd">    closure that hooks up an instance of itertools.count.</span>
+
+<span class="sd">    &gt;&gt;&gt; complex_ns1.name</span>
+<span class="sd">    &#39;Name for id=1&#39;</span>
+
+<span class="sd">    This value was also generated by a default value factory. Default</span>
+<span class="sd">    value factories are passed a single argument, the namedspace</span>
+<span class="sd">    instance. In this case, the factory for the &#39;name&#39; attribute uses</span>
+<span class="sd">    the value of the &#39;id&#39; attribute to compute the default value of</span>
+<span class="sd">    name.</span>
+
+<span class="sd">    &gt;&gt;&gt; complex_ns1.description</span>
+<span class="sd">    &#39;None available&#39;</span>
+
+<span class="sd">    This value came from the default_values mapping.</span>
+
+
+<span class="sd">    The description field was set as a mutable field, which allows</span>
+<span class="sd">    it to be modified.</span>
+
+<span class="sd">    &gt;&gt;&gt; complex_ns1.description = &quot;Some fancy description&quot;</span>
+<span class="sd">    &gt;&gt;&gt; complex_ns1.description</span>
+<span class="sd">    &#39;Some fancy description&#39;</span>
+
+<span class="sd">    Its value can also be deleted.</span>
+
+<span class="sd">    &gt;&gt;&gt; del complex_ns1.description</span>
+<span class="sd">    &gt;&gt;&gt; complex_ns1.description</span>
+<span class="sd">    &#39;None available&#39;</span>
+
+<span class="sd">    Since its modified value was deleted, and it has a default value,</span>
+<span class="sd">    it has reverted to its default value.</span>
+
+
+<span class="sd">    The extra field is a valid field in this namedspace, but it has not</span>
+<span class="sd">    yet been assigned a value and does not have a default.</span>
+<span class="sd">     </span>
+<span class="sd">    &gt;&gt;&gt; complex_ns1.extra</span>
+<span class="sd">    Traceback (most recent call last):</span>
+<span class="sd">        &lt;snip/&gt;</span>
+<span class="sd">    AttributeError: &quot;Field &#39;extra&#39; does not yet exist in this ComplexNS namedspace instance.&quot;</span>
+
+<span class="sd">    Since it one of the mutable fields, we can give it a value.</span>
+
+<span class="sd">    &gt;&gt;&gt; complex_ns1.extra = &quot;Lasts a long, long time&quot;</span>
+<span class="sd">    &gt;&gt;&gt; complex_ns1.extra</span>
+<span class="sd">    &#39;Lasts a long, long time&#39;</span>
+
+<span class="sd">    Only fields that have been declared as either required or optional</span>
+<span class="sd">    are allowed.</span>
+
+<span class="sd">    &gt;&gt;&gt; complex_ns1.some_other_field = &quot;some other value&quot;</span>
+<span class="sd">    Traceback (most recent call last):</span>
+<span class="sd">        &lt;snip/&gt;</span>
+<span class="sd">    FieldNameError: &quot;Field &#39;some_other_field&#39; does not exist in ComplexNS namedspace.&quot;</span>
+
+<span class="sd">    Finally, to illustrate that our counter is working as it should, if</span>
+<span class="sd">    we instantiate another instance, our id field will get the next</span>
+<span class="sd">    counter value.</span>
+
+<span class="sd">    &gt;&gt;&gt; complex_ns2 = ComplexNS()</span>
+<span class="sd">    &gt;&gt;&gt; complex_ns2.id</span>
+<span class="sd">    2</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c"># Initialize the list of arguments that will get put into the</span>
+    <span class="c"># doc string of the generated class</span>
+    <span class="n">arg_list_items</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="c">#</span>
+    <span class="c"># Validate parameters</span>
+    <span class="c">#</span>
+    <span class="k">for</span> <span class="n">arg_name</span> <span class="ow">in</span> <span class="p">(</span><span class="s">&quot;required_fields&quot;</span><span class="p">,</span> <span class="s">&quot;optional_fields&quot;</span><span class="p">,</span> <span class="s">&quot;mutable_fields&quot;</span><span class="p">):</span>
+        <span class="n">arg_value</span> <span class="o">=</span> <span class="nb">locals</span><span class="p">()[</span><span class="n">arg_name</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">arg_value</span><span class="p">,</span> <span class="nb">basestring</span><span class="p">):</span>
+            <span class="n">arg_value</span> <span class="o">=</span> <span class="p">(</span><span class="n">arg_value</span><span class="p">,)</span>
+            <span class="k">exec</span> <span class="s">&quot;{arg_name} = arg_value&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">arg_name</span><span class="o">=</span><span class="n">arg_name</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">arg_value</span><span class="p">,</span> <span class="n">Container</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;Value for argument &#39;{arg_name}&#39; must be a string or container of strings.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                    <span class="n">arg_name</span><span class="o">=</span><span class="n">arg_name</span><span class="p">))</span>
+
+        <span class="k">for</span> <span class="n">field_name</span> <span class="ow">in</span> <span class="n">arg_value</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">field_name</span><span class="p">,</span> <span class="nb">basestring</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;Items of container argument &#39;{arg_name}&#39; must be strings.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">arg_name</span><span class="o">=</span><span class="n">arg_name</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">arg_value</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="nb">frozenset</span><span class="p">(</span><span class="n">arg_value</span><span class="p">)):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;Value for argument &#39;{arg_name}&#39; contains duplicate fields.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                    <span class="n">arg_name</span><span class="o">=</span><span class="n">arg_name</span><span class="p">))</span>
+
+        <span class="n">arg_list_items</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&quot;{arg_name}={arg_value!r}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">arg_name</span><span class="o">=</span><span class="n">arg_name</span><span class="p">,</span> <span class="n">arg_value</span><span class="o">=</span><span class="nb">tuple</span><span class="p">(</span><span class="n">arg_value</span><span class="p">)))</span>
+
+        <span class="k">exec</span> <span class="s">&quot;{arg_name}_set = frozenset(arg_value)&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">arg_name</span><span class="o">=</span><span class="n">arg_name</span><span class="p">)</span>
+
+    <span class="n">all_fields</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">required_fields</span> <span class="o">+</span> <span class="n">optional_fields</span><span class="p">)</span>
+    <span class="n">all_fields_set</span> <span class="o">=</span> <span class="nb">frozenset</span><span class="p">(</span><span class="n">all_fields</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">field_name</span> <span class="ow">in</span> <span class="n">mutable_fields</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">field_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">all_fields_set</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;Mutable field &#39;{field_name}&#39; is not a required or optional field.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                    <span class="n">field_name</span><span class="o">=</span><span class="n">field_name</span><span class="p">))</span>
+
+    <span class="k">for</span> <span class="n">arg_name</span> <span class="ow">in</span> <span class="p">(</span><span class="s">&quot;default_values&quot;</span><span class="p">,</span> <span class="s">&quot;default_value_factories&quot;</span><span class="p">):</span>
+        <span class="n">arg_value</span> <span class="o">=</span> <span class="nb">locals</span><span class="p">()[</span><span class="n">arg_name</span><span class="p">]</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">arg_value</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;Value for argument &#39;{arg_name}&#39; must be a mapping.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">arg_name</span><span class="o">=</span><span class="n">arg_name</span><span class="p">))</span>
+
+        <span class="n">default_field_names</span> <span class="o">=</span> <span class="nb">frozenset</span><span class="p">(</span><span class="n">arg_value</span><span class="o">.</span><span class="n">iterkeys</span><span class="p">())</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">default_field_names</span><span class="o">.</span><span class="n">issubset</span><span class="p">(</span><span class="n">all_fields_set</span><span class="p">):</span>
+            <span class="n">bad_default_field_names</span> <span class="o">=</span> <span class="n">default_field_names</span> <span class="o">-</span> <span class="n">all_fields_set</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;Value for argument &#39;{arg_name}&#39; contains invalid field(s) &#39;{field_names}&#39;.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                    <span class="n">arg_name</span><span class="o">=</span><span class="n">arg_name</span><span class="p">,</span> <span class="n">field_names</span><span class="o">=</span><span class="s">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">bad_default_field_names</span><span class="p">)))</span>
+
+        <span class="n">arg_list_items</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&quot;{arg_name}={arg_value!r}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">arg_name</span><span class="o">=</span><span class="n">arg_name</span><span class="p">,</span> <span class="n">arg_value</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">arg_value</span><span class="p">)))</span>
+
+        <span class="k">exec</span> <span class="s">&quot;{arg_name} = frozendict(arg_value)&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">arg_name</span><span class="o">=</span><span class="n">arg_name</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">field_name</span><span class="p">,</span> <span class="n">factory</span> <span class="ow">in</span> <span class="n">default_value_factories</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">callable</span><span class="p">(</span><span class="n">factory</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;Default value factory for &#39;{field_name}&#39; is not callable.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">field_name</span><span class="o">=</span><span class="n">field_name</span><span class="p">))</span>
+
+    <span class="c"># Fill-in the class template</span>
+    <span class="n">class_definition</span> <span class="o">=</span> <span class="n">_class_template</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+        <span class="n">typename</span><span class="o">=</span><span class="n">typename</span><span class="p">,</span>
+        <span class="n">arg_list</span><span class="o">=</span><span class="s">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">arg_list_items</span><span class="p">),</span>
+        <span class="p">)</span>
+
+    <span class="c"># Execute the template string in a temporary namespace and support</span>
+    <span class="c"># tracing utilities by setting a value for frame.f_globals[&#39;__name__&#39;]</span>
+    <span class="n">namespace</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
+        <span class="n">__name__</span><span class="o">=</span><span class="s">&#39;namedspace_{typename}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">typename</span><span class="o">=</span><span class="n">typename</span><span class="p">),</span>
+        <span class="n">all_fields</span><span class="o">=</span><span class="n">all_fields</span><span class="p">,</span>
+        <span class="n">all_fields_set</span><span class="o">=</span><span class="n">all_fields_set</span><span class="p">,</span>
+        <span class="n">required_fields_set</span><span class="o">=</span><span class="nb">locals</span><span class="p">()[</span><span class="s">&quot;required_fields_set&quot;</span><span class="p">],</span>
+        <span class="n">mutable_fields_set</span><span class="o">=</span><span class="nb">locals</span><span class="p">()[</span><span class="s">&quot;mutable_fields_set&quot;</span><span class="p">],</span>
+        <span class="n">default_values</span><span class="o">=</span><span class="n">default_values</span><span class="p">,</span>
+        <span class="n">default_value_factories</span><span class="o">=</span><span class="n">default_value_factories</span><span class="p">,</span>
+        <span class="n">Hashable</span><span class="o">=</span><span class="n">Hashable</span><span class="p">,</span>
+        <span class="n">MutableMapping</span><span class="o">=</span><span class="n">MutableMapping</span><span class="p">,</span>
+        <span class="n">OrderedDict</span><span class="o">=</span><span class="n">OrderedDict</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="c">#</span>
+    <span class="c"># Code from here down copied verbatim from namedtuple</span>
+    <span class="c">#</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">exec</span> <span class="n">class_definition</span> <span class="ow">in</span> <span class="n">namespace</span>
+    <span class="k">except</span> <span class="ne">SyntaxError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">SyntaxError</span><span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">message</span> <span class="o">+</span> <span class="s">&#39;:</span><span class="se">\n</span><span class="s">&#39;</span> <span class="o">+</span> <span class="n">class_definition</span><span class="p">)</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">namespace</span><span class="p">[</span><span class="n">typename</span><span class="p">]</span>
+
+    <span class="c"># For pickling to work, the __module__ variable needs to be set to the frame</span>
+    <span class="c"># where the named tuple is created.  Bypass this step in enviroments where</span>
+    <span class="c"># sys._getframe is not defined (Jython for example) or sys._getframe is not</span>
+    <span class="c"># defined for arguments greater than 0 (IronPython).</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">result</span><span class="o">.</span><span class="n">__module__</span> <span class="o">=</span> <span class="n">_sys</span><span class="o">.</span><span class="n">_getframe</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">f_globals</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;__name__&#39;</span><span class="p">,</span> <span class="s">&#39;__main__&#39;</span><span class="p">)</span>
+    <span class="k">except</span> <span class="p">(</span><span class="ne">AttributeError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">):</span>
+        <span class="k">pass</span>
+
+    <span class="k">return</span> <span class="n">result</span>
+
+<span class="n">_class_template</span> <span class="o">=</span> <span class="s">&quot;&quot;&quot;</span><span class="se">\</span></div>
+<span class="s">class {typename}(object):</span>
+<span class="s">    &quot;{typename}({arg_list})&quot;</span>
+
+<span class="s">    class FieldNameError(AttributeError, KeyError): pass</span>
+<span class="s">    class ReadOnlyNamedspaceError(TypeError): pass</span>
+<span class="s">    class ReadOnlyFieldError(TypeError): pass</span>
+<span class="s">    class MutableNamedspaceError(TypeError): pass</span>
+
+<span class="s">    _all_fields = all_fields</span>
+<span class="s">    _all_fields_set = all_fields_set</span>
+<span class="s">    _required_fields_set = required_fields_set</span>
+<span class="s">    _mutable_fields_set = mutable_fields_set</span>
+<span class="s">    _default_values = default_values</span>
+<span class="s">    _default_value_factories = default_value_factories</span>
+
+<span class="s">    def __init__(self, **kwargs):</span>
+<span class="s">        self._field_value_storage = OrderedDict()</span>
+
+<span class="s">        for field_name, field_value in kwargs.iteritems():</span>
+<span class="s">            if field_name in self._all_fields_set:</span>
+<span class="s">                self._field_value_storage[field_name] = field_value</span>
+<span class="s">            else:</span>
+<span class="s">                raise ValueError(&quot;field &#39;{{field_name}} does not exist in the {typename} namedspace.&quot;.format(</span>
+<span class="s">                        field_name=field_name))</span>
+
+<span class="s">        for field_name in self._all_fields:</span>
+<span class="s">            try:</span>
+<span class="s">                field_value = self._get_value(field_name)</span>
+<span class="s">            except self.FieldNameError:</span>
+<span class="s">                field_value = None</span>
+
+<span class="s">            if field_value in (None, &quot;&quot;) and field_name in self._required_fields_set:</span>
+<span class="s">                raise ValueError(&quot;A value for field &#39;{{field_name}}&#39; is required.&quot;.format(field_name=field_name))</span>
+<span class="s">            elif not field_name in self._field_value_storage:</span>
+<span class="s">                self._field_value_storage[field_name] = field_value</span>
+
+<span class="s">    def __repr__(self):</span>
+<span class="s">        &#39;Return a nicely formatted representation string&#39;</span>
+<span class="s">        return &#39;{typename}({{items}})&#39;.format(items=&quot;, &quot;.join(&quot;{{name}}={{value!r}}&quot;.format(name=name, value=value)</span>
+<span class="s">                for name, value in self._field_items))</span>
+
+<span class="s">    #</span>
+<span class="s">    # Generic value access methods</span>
+<span class="s">    #</span>
+<span class="s">    def _get_value(self, field_name):</span>
+<span class="s">        if not field_name in self._all_fields_set:</span>
+<span class="s">            raise self.FieldNameError(&quot;Field &#39;{{field_name}}&#39; does not exist in the {typename} namedspace.&quot;.format(</span>
+<span class="s">                    field_name=field_name))</span>
+
+<span class="s">        field_value = self._field_value_storage.get(field_name)</span>
+<span class="s">        if field_value is None:</span>
+<span class="s">            field_value = self._default_values.get(field_name)</span>
+<span class="s">            if field_value is None:</span>
+<span class="s">                factory = self._default_value_factories.get(field_name)</span>
+<span class="s">                if factory is None:</span>
+<span class="s">                    raise self.FieldNameError(&quot;Field &#39;{{field_name}}&#39; does not yet exist in this {typename}&quot;</span>
+<span class="s">                            &quot; namedspace instance.&quot;.format(field_name=field_name))</span>
+<span class="s">                else:</span>
+<span class="s">                    field_value = factory(self)</span>
+
+<span class="s">        return field_value</span>
+
+<span class="s">    def _validate_field_mutability(self, field_name):</span>
+<span class="s">        if not field_name in self._all_fields_set:</span>
+<span class="s">            raise self.FieldNameError(&quot;Field &#39;{{field_name}}&#39; does not exist in {typename} namedspace.&quot;.format(</span>
+<span class="s">                    field_name=field_name))</span>
+<span class="s">        if not field_name in self._mutable_fields_set:</span>
+<span class="s">            if self._mutable_fields_set:</span>
+<span class="s">                raise self.ReadOnlyFieldError(&quot;Field &#39;{{field_name}}&#39; of {typename} namedspace is read-only.&quot;.format(</span>
+<span class="s">                        field_name=field_name))</span>
+<span class="s">            else:</span>
+<span class="s">                raise self.ReadOnlyNamedspaceError(&quot;{typename} namedspace is read-only.&quot;)</span>
+
+<span class="s">    def _set_value(self, field_name, field_value):</span>
+<span class="s">        self._validate_field_mutability(field_name)</span>
+<span class="s">        self._field_value_storage[field_name] = field_value</span>
+
+<span class="s">    def _del_value(self, field_name):</span>
+<span class="s">        self._validate_field_mutability(field_name)</span>
+<span class="s">        del self._field_value_storage[field_name]</span>
+
+<span class="s">    #</span>
+<span class="s">    # Namedspace API</span>
+<span class="s">    #</span>
+<span class="s">    @property</span>
+<span class="s">    def _field_names(self):</span>
+<span class="s">        return self._all_fields</span>
+
+<span class="s">    @property</span>
+<span class="s">    def _field_names_iter(self):</span>
+<span class="s">        return iter(self._all_fields)</span>
+
+<span class="s">    @property</span>
+<span class="s">    def _field_values_iter(self):</span>
+<span class="s">        for field_name in self._all_fields:</span>
+<span class="s">            yield getattr(self, field_name, None)</span>
+
+<span class="s">    @property</span>
+<span class="s">    def _field_values(self):</span>
+<span class="s">        return tuple(self._field_values_iter)</span>
+
+<span class="s">    @property</span>
+<span class="s">    def _field_items_iter(self):</span>
+<span class="s">        for field_name in self._all_fields:</span>
+<span class="s">            yield (field_name, getattr(self, field_name, None))</span>
+
+<span class="s">    @property</span>
+<span class="s">    def _field_items(self):</span>
+<span class="s">        return list(self._field_items_iter)</span>
+
+<span class="s">    @property</span>
+<span class="s">    def _as_dict(self):</span>
+<span class="s">        &#39;Return a the namedspace values as a new ordered dictionary.&#39;</span>
+<span class="s">        return OrderedDict(self._field_items_iter)</span>
+
+<span class="s">    #</span>
+<span class="s">    # Attribute API</span>
+<span class="s">    #</span>
+<span class="s">    def __getattr__(self, attr_name):</span>
+<span class="s">        try:</span>
+<span class="s">            return self._get_value(attr_name)</span>
+<span class="s">        except self.FieldNameError as e:</span>
+<span class="s">            raise AttributeError(str(e))</span>
+
+<span class="s">    def __setattr__(self, attr_name, attr_value):</span>
+<span class="s">        if attr_name == &quot;_field_value_storage&quot;:</span>
+<span class="s">            return super({typename}, self).__setattr__(attr_name, attr_value)</span>
+<span class="s">        else:</span>
+<span class="s">            return self._set_value(attr_name, attr_value)</span>
+
+<span class="s">    def __delattr__(self, attr_name):</span>
+<span class="s">        return self._del_value(attr_name)</span>
+
+<span class="s">    #</span>
+<span class="s">    # Hashable API</span>
+<span class="s">    #</span>
+<span class="s">    def __hash__(self):</span>
+<span class="s">        if self._mutable_fields_set:</span>
+<span class="s">            raise self.MutableNamedspaceError(&quot;Mutable {typename} namedspace instance is not hashable.&quot;)</span>
+<span class="s">        else:</span>
+<span class="s">            return hash(self._field_values)</span>
+
+<span class="s">    #</span>
+<span class="s">    # MutableMapping API</span>
+<span class="s">    #</span>
+<span class="s">    def __contains__(self, name):</span>
+<span class="s">        return name in self._field_names</span>
+
+<span class="s">    def __iter__(self):</span>
+<span class="s">        return self._field_names_iter</span>
+
+<span class="s">    def __len__(self):</span>
+<span class="s">        return len(self._field_values)</span>
+
+<span class="s">    def __getitem__(self, item_name):</span>
+<span class="s">        try:</span>
+<span class="s">            return self._get_value(item_name)</span>
+<span class="s">        except self.FieldNameError as e:</span>
+<span class="s">            raise KeyError(str(e))</span>
+
+<span class="s">    def __setitem__(self, item_name, item_value):</span>
+<span class="s">        return self._set_value(item_name, item_value)</span>
+
+<span class="s">    def __delitem__(self, item_name):</span>
+<span class="s">        return self._del_value(item_name)</span>
+
+
+<span class="s">Hashable.register({typename})</span>
+<span class="s">MutableMapping.register({typename})</span>
+<span class="s">&quot;&quot;&quot;</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../index.html">namedspace 1.0.1 documentation</a> &raquo;</li>
+          <li><a href="index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2013, Warren A. Smith.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+    </div>
+  </body>
+</html>

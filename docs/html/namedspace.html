@@ -1,0 +1,315 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>namedspace Module &mdash; namedspace 1.0.1 documentation</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '',
+        VERSION:     '1.0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="namedspace 1.0.1 documentation" href="index.html" />
+    <link rel="prev" title="Welcome to namedspace’s documentation!" href="index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Welcome to namedspace’s documentation!"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">namedspace 1.0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="module-namedspace">
+<span id="namedspace-module"></span><h1>namedspace Module<a class="headerlink" href="#module-namedspace" title="Permalink to this headline">¶</a></h1>
+<dl class="function">
+<dt id="namedspace.namedspace">
+<tt class="descclassname">namedspace.</tt><tt class="descname">namedspace</tt><big>(</big><em>typename</em>, <em>required_fields=()</em>, <em>optional_fields=()</em>, <em>mutable_fields=()</em>, <em>default_values=&lt;frozendict {}&gt;</em>, <em>default_value_factories=&lt;frozendict {}&gt;</em><big>)</big><a class="reference internal" href="_modules/namedspace.html#namedspace"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#namedspace.namedspace" title="Permalink to this definition">¶</a></dt>
+<dd><p>Builds a new class that encapsulates a namespace and provides
+various ways to access it.</p>
+<p>The typename argument is required and is the name of the
+namedspace class that will be generated.</p>
+<p>The required_fields and optional_fields arguments can be a string
+or sequence of strings and together specify the fields that
+instances of the namedspace class have.</p>
+<p>Values for the required fields must be provided somehow when the
+instance is created. Values for optional fields may be provided
+later, or maybe not at all.</p>
+<p>The mutable_fields argument specifies which fields will be mutable,
+if any. By default, all fields are immutable and all instances are
+hashable and can be used as dictionary keys. If any fields are set
+as mutable, all instances are not hashable and cannot be used as
+dictionary keys.</p>
+<p>The default_values mapping provides simple default values for the
+fields.</p>
+<p>The default_value_factories mapping provides a more flexible, but
+more complex, mechanism for providing default values. The value of
+each item is a callable that takes a single argument, the
+namedspace instance, and returns the default value for the field.</p>
+<p>The default_values_factories mapping is only consulted if there
+is no default value for the field in the default_values mapping.</p>
+<p>Here is a simple example, using only the required fields argument:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">SimpleNS</span> <span class="o">=</span> <span class="n">namedspace</span><span class="p">(</span><span class="s">&quot;SimpleNS&quot;</span><span class="p">,</span> <span class="p">(</span><span class="s">&quot;id&quot;</span><span class="p">,</span> <span class="s">&quot;name&quot;</span><span class="p">,</span> <span class="s">&quot;description&quot;</span><span class="p">))</span>
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">SimpleNS</span>
+<span class="go">&lt;class &#39;namedspace.SimpleNS&#39;&gt;</span>
+</pre></div>
+</div>
+<p>Once the class has been created, it can be instantiated like any
+other class. However, a value for all of the required fields must
+be provided.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">simple_ns</span> <span class="o">=</span> <span class="n">SimpleNS</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s">&quot;Simple Description&quot;</span><span class="p">)</span>
+<span class="gt">Traceback (most recent call last):</span>
+    <span class="o">&lt;</span><span class="n">snip</span><span class="o">/&gt;</span>
+<span class="gr">ValueError</span>: <span class="n">A value for field &#39;name&#39; is required.</span>
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">simple_ns</span> <span class="o">=</span> <span class="n">SimpleNS</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s">&quot;Simple Name&quot;</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s">&quot;Simple Description&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">simple_ns</span>
+<span class="go">SimpleNS(id=1, name=&#39;Simple Name&#39;, description=&#39;Simple Description&#39;)</span>
+</pre></div>
+</div>
+<p>An instance of a namedspace class provides standard attribute
+access to its fields.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">simple_ns</span><span class="o">.</span><span class="n">id</span>
+<span class="go">1</span>
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">simple_ns</span><span class="o">.</span><span class="n">name</span>
+<span class="go">&#39;Simple Name&#39;</span>
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">simple_ns</span><span class="o">.</span><span class="n">description</span>
+<span class="go">&#39;Simple Description&#39;</span>
+</pre></div>
+</div>
+<p>In addition to standard attribute access, instances of a namedspace
+class implement a MutableMapping interface.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="s">&#39;id&#39;</span> <span class="ow">in</span> <span class="n">simple_ns</span>
+<span class="go">True</span>
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">field_name</span> <span class="ow">in</span> <span class="n">simple_ns</span><span class="p">:</span>
+<span class="gp">... </span>    <span class="k">print</span> <span class="n">field_name</span>
+<span class="go">id</span>
+<span class="go">name</span>
+<span class="go">description</span>
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="nb">len</span><span class="p">(</span><span class="n">simple_ns</span><span class="p">)</span>
+<span class="go">3</span>
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">simple_ns</span><span class="p">[</span><span class="s">&quot;id&quot;</span><span class="p">]</span>
+<span class="go">1</span>
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">simple_ns</span><span class="p">[</span><span class="s">&quot;name&quot;</span><span class="p">]</span>
+<span class="go">&#39;Simple Name&#39;</span>
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">simple_ns</span><span class="p">[</span><span class="s">&quot;description&quot;</span><span class="p">]</span>
+<span class="go">&#39;Simple Description&#39;</span>
+</pre></div>
+</div>
+<p>There are built-in properties to access collections and iterators
+associated with the namespace.</p>
+<p>The namespace encapsulated by a namedspace class is stored in an
+OrderedDict, so order of the collections is the same as the order
+that the fields were specified.</p>
+<p>All of these properties use the standard &#8220;protected&#8221; naming
+convention in order to not pollute the public namespace.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">simple_ns</span><span class="o">.</span><span class="n">_field_names</span>
+<span class="go">(&#39;id&#39;, &#39;name&#39;, &#39;description&#39;)</span>
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="nb">tuple</span><span class="p">(</span><span class="n">simple_ns</span><span class="o">.</span><span class="n">_field_names_iter</span><span class="p">)</span>
+<span class="go">(&#39;id&#39;, &#39;name&#39;, &#39;description&#39;)</span>
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">simple_ns</span><span class="o">.</span><span class="n">_field_values</span>
+<span class="go">(1, &#39;Simple Name&#39;, &#39;Simple Description&#39;)</span>
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="nb">tuple</span><span class="p">(</span><span class="n">simple_ns</span><span class="o">.</span><span class="n">_field_values_iter</span><span class="p">)</span>
+<span class="go">(1, &#39;Simple Name&#39;, &#39;Simple Description&#39;)</span>
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">simple_ns</span><span class="o">.</span><span class="n">_field_items</span>
+<span class="go">[(&#39;id&#39;, 1), (&#39;name&#39;, &#39;Simple Name&#39;), (&#39;description&#39;, &#39;Simple Description&#39;)]</span>
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="nb">list</span><span class="p">(</span><span class="n">simple_ns</span><span class="o">.</span><span class="n">_field_items_iter</span><span class="p">)</span>
+<span class="go">[(&#39;id&#39;, 1), (&#39;name&#39;, &#39;Simple Name&#39;), (&#39;description&#39;, &#39;Simple Description&#39;)]</span>
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">simple_ns</span><span class="o">.</span><span class="n">_as_dict</span>
+<span class="go">OrderedDict([(&#39;id&#39;, 1), (&#39;name&#39;, &#39;Simple Name&#39;), (&#39;description&#39;, &#39;Simple Description&#39;)])</span>
+</pre></div>
+</div>
+<p>Here is a more complex example, using all of the arguments:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">itertools</span> <span class="kn">import</span> <span class="n">count</span>
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">ComplexNS</span> <span class="o">=</span> <span class="n">namedspace</span><span class="p">(</span><span class="s">&quot;ComplexNS&quot;</span><span class="p">,</span> <span class="s">&quot;id&quot;</span><span class="p">,</span> <span class="n">optional_fields</span><span class="o">=</span><span class="p">(</span><span class="s">&quot;name&quot;</span><span class="p">,</span> <span class="s">&quot;description&quot;</span><span class="p">,</span> <span class="s">&quot;extra&quot;</span><span class="p">),</span>
+<span class="gp">... </span>    <span class="n">mutable_fields</span><span class="o">=</span><span class="p">(</span><span class="s">&quot;description&quot;</span><span class="p">,</span> <span class="s">&quot;extra&quot;</span><span class="p">),</span> <span class="n">default_values</span><span class="o">=</span><span class="p">{</span><span class="s">&quot;description&quot;</span><span class="p">:</span> <span class="s">&quot;None available&quot;</span><span class="p">},</span>
+<span class="gp">... </span>    <span class="n">default_value_factories</span><span class="o">=</span><span class="p">{</span><span class="s">&quot;id&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="bp">self</span><span class="p">,</span> <span class="n">counter</span><span class="o">=</span><span class="n">count</span><span class="p">(</span><span class="n">start</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span> <span class="n">counter</span><span class="o">.</span><span class="n">next</span><span class="p">(),</span>
+<span class="gp">... </span>        <span class="s">&quot;name&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="bp">self</span><span class="p">:</span> <span class="s">&quot;Name for id={id}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">)})</span>
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">complex_ns1</span> <span class="o">=</span> <span class="n">ComplexNS</span><span class="p">()</span>
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">complex_ns1</span><span class="o">.</span><span class="n">id</span>
+<span class="go">1</span>
+</pre></div>
+</div>
+<p>The value of 1 was automatically assigned by the
+default_value_factory for the &#8216;id&#8217; field, in this case a lambda
+closure that hooks up an instance of itertools.count.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">complex_ns1</span><span class="o">.</span><span class="n">name</span>
+<span class="go">&#39;Name for id=1&#39;</span>
+</pre></div>
+</div>
+<p>This value was also generated by a default value factory. In this
+case, the factory for the &#8216;name&#8217; attribute uses the value of the
+&#8216;id&#8217; attribute to compute the default value.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">complex_ns1</span><span class="o">.</span><span class="n">description</span>
+<span class="go">&#39;None available&#39;</span>
+</pre></div>
+</div>
+<p>This value came from the default_values mapping.</p>
+<p>The description field was set as a mutable field, which allows
+it to be modified.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">complex_ns1</span><span class="o">.</span><span class="n">description</span> <span class="o">=</span> <span class="s">&quot;Some fancy description&quot;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">complex_ns1</span><span class="o">.</span><span class="n">description</span>
+<span class="go">&#39;Some fancy description&#39;</span>
+</pre></div>
+</div>
+<p>Its value can also be deleted.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="k">del</span> <span class="n">complex_ns1</span><span class="o">.</span><span class="n">description</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">complex_ns1</span><span class="o">.</span><span class="n">description</span>
+<span class="go">&#39;None available&#39;</span>
+</pre></div>
+</div>
+<p>Since its modified value was deleted, and it has a default value,
+it has reverted to its default value.</p>
+<p>The extra field is a valid field in this namedspace, but it has not
+yet been assigned a value and does not have a default.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">complex_ns1</span><span class="o">.</span><span class="n">extra</span>
+<span class="gt">Traceback (most recent call last):</span>
+    <span class="o">&lt;</span><span class="n">snip</span><span class="o">/&gt;</span>
+<span class="gr">AttributeError</span>: <span class="n">&quot;Field &#39;extra&#39; does not yet exist in this ComplexNS namedspace instance.&quot;</span>
+</pre></div>
+</div>
+<p>Since it one of the mutable fields, we can give it a value.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">complex_ns1</span><span class="o">.</span><span class="n">extra</span> <span class="o">=</span> <span class="s">&quot;Lasts a long, long time&quot;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">complex_ns1</span><span class="o">.</span><span class="n">extra</span>
+<span class="go">&#39;Lasts a long, long time&#39;</span>
+</pre></div>
+</div>
+<p>Only fields that have been declared as either required or optional
+are allowed.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">complex_ns1</span><span class="o">.</span><span class="n">some_other_field</span> <span class="o">=</span> <span class="s">&quot;some other value&quot;</span>
+<span class="gt">Traceback (most recent call last):</span>
+    <span class="o">&lt;</span><span class="n">snip</span><span class="o">/&gt;</span>
+<span class="gr">FieldNameError</span>: <span class="n">&quot;Field &#39;some_other_field&#39; does not exist in ComplexNS namedspace.&quot;</span>
+</pre></div>
+</div>
+<p>Finally, to illustrate that our counter is working as it should, if
+we instantiate another instance, our id field will get the next
+counter value.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">complex_ns2</span> <span class="o">=</span> <span class="n">ComplexNS</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">complex_ns2</span><span class="o">.</span><span class="n">id</span>
+<span class="go">2</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="index.html"
+                        title="previous chapter">Welcome to namedspace&#8217;s documentation!</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/namedspace.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Welcome to namedspace’s documentation!"
+             >previous</a> |</li>
+        <li><a href="index.html">namedspace 1.0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2013, Warren A. Smith.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+    </div>
+  </body>
+</html>
