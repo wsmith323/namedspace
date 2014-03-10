@@ -1,6 +1,10 @@
 
 namedspace release notes
 ========================
+1.1.0
+=====
+* Add ability for optional fields to return None instead of
+  raising an AttributeError.
 
 1.0.1
 =====
