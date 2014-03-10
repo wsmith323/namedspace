@@ -11,7 +11,7 @@ from frozendict import frozendict
 
 
 def namedspace(typename, required_fields=(), optional_fields=(), mutable_fields=(), default_values=frozendict(),
-               default_value_factories=frozendict()):
+               default_value_factories=frozendict(), return_none=False):
     """Builds a new class that encapsulates a namespace and provides
     various ways to access it.
 
@@ -26,6 +26,11 @@ def namedspace(typename, required_fields=(), optional_fields=(), mutable_fields=
     Values for the required fields must be provided somehow when the
     instance is created. Values for optional fields may be provided
     later, or maybe not at all.
+
+    If an optional field is queried before its value has been set,
+    an AttributeError will be raised. This behavior can be altered
+    to cause None to be returned instead by setting the return_none
+    keyword argument to True.
 
     The mutable_fields argument specifies which fields will be mutable,
     if any. By default, all fields are immutable and all instances are
@@ -296,6 +301,7 @@ def namedspace(typename, required_fields=(), optional_fields=(), mutable_fields=
         Hashable=Hashable,
         MutableMapping=MutableMapping,
         OrderedDict=OrderedDict,
+        return_none=return_none,
         )
 
     #
@@ -333,6 +339,7 @@ class {typename}(object):
     _mutable_fields_set = mutable_fields_set
     _default_values = default_values
     _default_value_factories = default_value_factories
+    _return_none = return_none
 
     def __init__(self, **kwargs):
         self._field_value_storage = OrderedDict()
@@ -374,8 +381,11 @@ class {typename}(object):
             if field_value is None:
                 factory = self._default_value_factories.get(field_name)
                 if factory is None:
-                    raise self.FieldNameError("Field '{{field_name}}' does not yet exist in this {typename}"
-                            " namedspace instance.".format(field_name=field_name))
+                    if self._return_none:
+                        return None
+                    else:
+                        raise self.FieldNameError("Field '{{field_name}}' does not yet exist in this {typename}"
+                                " namedspace instance.".format(field_name=field_name))
                 else:
                     field_value = factory(self)
 

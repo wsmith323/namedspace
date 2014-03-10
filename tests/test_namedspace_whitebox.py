@@ -9,17 +9,25 @@ class NamedspaceTests(TestCase):
     def setUpClass(cls):
         cls.mock_default_value = "Mock default value"
         cls.mock_name_template = "Mock name for {id}"
-        cls.mock_default_factory = staticmethod(lambda ns: cls.mock_name_template.format(id=ns.id))
+        cls.mock_default_factory = staticmethod(
+            lambda ns: cls.mock_name_template.format(id=ns.id))
         cls.mock_id = "mock_id"
 
-        cls.TestNamedspace1 = namedspace("TestNamedspace1", "id", optional_fields=("name", "description", "extra"),
-                mutable_fields=("name", "description"), default_values={"extra": cls.mock_default_value},
-                default_value_factories={"name": cls.mock_default_factory})
+        cls.TestNamedspace1 = namedspace("TestNamedspace1", "id",
+            optional_fields=("name", "description", "extra"),
+            mutable_fields=("name", "description"),
+            default_values={"extra": cls.mock_default_value},
+            default_value_factories={"name": cls.mock_default_factory})
         cls.test_ns1 = cls.TestNamedspace1(id=cls.mock_id)
 
-        cls.TestNamedspace2 = namedspace("TestNamedspace2", "id", optional_fields="name",
-                default_value_factories={"name": cls.mock_default_factory})
+        cls.TestNamedspace2 = namedspace("TestNamedspace2", "id",
+            optional_fields="name",
+            default_value_factories={"name": cls.mock_default_factory})
         cls.test_ns2 = cls.TestNamedspace2(id=cls.mock_id)
+
+        cls.TestNamedspace3 = namedspace("TestNamedspace3", "id",
+            optional_fields="name", return_none=True)
+        cls.test_ns3 = cls.TestNamedspace3(id=cls.mock_id)
 
     def test_missing_required_fields(self):
         """
@@ -59,16 +67,19 @@ class NamedspaceTests(TestCase):
 
     def test_immutable_namedspace(self):
         """
-        Namedspaces that have no mutable fields should consider themselves read-only.
+        Namedspaces that have no mutable fields should consider
+        themselves read-only.
         """
         self.assertRaises(self.TestNamedspace2.ReadOnlyNamedspaceError,
                 lambda: setattr(self.test_ns2, "name", "new name"))
 
     def test_namedspace_hashable(self):
         """
-        Immutable namedspaces should be hashable. Mutable namedspaces should not be.
+        Immutable namedspaces should be hashable. Mutable namedspaces
+        should not be.
         """
-        self.assertRaises(self.TestNamedspace1.MutableNamedspaceError, lambda: hash(self.test_ns1))
+        self.assertRaises(self.TestNamedspace1.MutableNamedspaceError,
+            lambda: hash(self.test_ns1))
 
         ns2_hash = hash(self.test_ns2)
         self.assertIsInstance(ns2_hash, int)
@@ -89,13 +100,15 @@ class NamedspaceTests(TestCase):
         class was generated, calling the factory and passing the
         namedspace instance to it, and returning the resulting value.
         """
-        self.assertEqual(self.test_ns1.name, self.mock_name_template.format(id=self.test_ns1.id))
+        self.assertEqual(self.test_ns1.name, self.mock_name_template.format(
+            id=self.test_ns1.id))
 
     def test_field_names(self):
         """
         The _field_names property should return the correct values.
         """
-        self.assertEqual(self.test_ns1._field_names, ("id", "name", "description", "extra"))
+        self.assertEqual(self.test_ns1._field_names,
+            ("id", "name", "description", "extra"))
 
     def test_field_values(self):
         """
@@ -119,6 +132,13 @@ class NamedspaceTests(TestCase):
                 ("extra", self.test_ns1.extra),
             ])
 
+    def test_return_none(self):
+        """
+        Optional arguments should return None when they have not had
+        a value set.
+        """
+        self.assertIs(None, self.test_ns3.name)
+
 
 class SubNamedspace(namedspace("_SubNamedspace", ("id", "name"))):
     _name_tmpl = "Overridden name for {id}"
@@ -141,10 +161,12 @@ class SubNamedspaceTests(TestCase):
         Properties with the same name as namedspace fieldnames should
         override the field values.
         """
-        self.assertEqual(self.test_ns1.name, SubNamedspace._name_tmpl.format(id=self.mock_id))
+        self.assertEqual(self.test_ns1.name, SubNamedspace._name_tmpl.format(
+            id=self.mock_id))
 
     def test_overridden_values(self):
         """
         Overridden property values should properly appear in value collections.
         """
-        self.assertIn(SubNamedspace._name_tmpl.format(id=self.mock_id), self.test_ns1._field_values)
+        self.assertIn(SubNamedspace._name_tmpl.format(id=self.mock_id),
+            self.test_ns1._field_values)
