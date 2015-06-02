@@ -3,7 +3,7 @@ import os
 
 from setuptools import setup, find_packages
 
-__version__ = "1.1.0"
+__version__ = "1.1.1"
 
 def file_read(filename):
     filepath = os.path.join(os.path.dirname(__file__), filename)
@@ -19,7 +19,7 @@ setup(
     author_email = "warren@wandrsmith.net",
     description = "Namespace class factory.",
     long_description = file_read("README.md"),
-    license = "PSF",
+    license = "MIT",
     keywords = "namedspace namespace",
     url = "https://github.com/wsmith323/namedspace",
     test_suite = "tests",
