@@ -260,12 +260,14 @@ def namedspace(typename, required_fields=(), optional_fields=(), mutable_fields=
     behavior through declarative configuration, instead of having
     to re-define that behavior imperatively.
 
-    Here is a (fairly contrived) example:
+    The following is an example where one of the required fields is
+    generated at instantiation time, and the values for the two
+    optional fields are calculated values provided by properties in
+    the subclass.
 
-    >>> from collections import Counter, OrderedDict
-    >>> _Widget = namedspace("_Widget", ("mfg_code", "model_code", "serial_number"), optional_fields=("sku", "pk"),
-    ...         return_none=True)
-    >>> class Widget(_Widget):
+    >>> from collections import Counter
+    >>> class Widget(namedspace("_Widget", ("mfg_code", "model_code", "serial_number"), optional_fields=("sku", "pk"),
+    ...         return_none=True)):
     ...     _sn_map = Counter()
     ...     def __init__(self, *args, **kwargs):
     ...         sn_key = (kwargs["mfg_code"], kwargs["model_code"])
