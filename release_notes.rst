@@ -1,6 +1,10 @@
 
 namedspace release notes
 ========================
+1.2.1
+=====
+* Minor documentation refactor.
+
 1.2.0
 =====
 * Make _field_names and _field_names_iter properties available
