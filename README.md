@@ -24,3 +24,5 @@ calling it "namedspace" gives a nod to its namedtuple ancestry.
 Enjoy!
 
 --Warren A. Smith
+
+Read the docs: http://namedspace.readthedocs.org/
