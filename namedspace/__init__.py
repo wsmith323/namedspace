@@ -10,8 +10,9 @@ from collections import OrderedDict
 from frozendict import frozendict
 
 
-def namedspace(typename, required_fields=(), optional_fields=(), mutable_fields=(), default_values=frozendict(),
-               default_value_factories=frozendict(), return_none=False):
+def namedspace(typename, required_fields=(), optional_fields=(), mutable_fields=(),
+        default_values=frozendict(), default_value_factories=frozendict(),
+        return_none=False):
     """Builds a new class that encapsulates a namespace and provides
     various ways to access it.
 
@@ -57,6 +58,14 @@ def namedspace(typename, required_fields=(), optional_fields=(), mutable_fields=
     >>> SimpleNS
     <class 'namedspace.SimpleNS'>
 
+    There are built-in properties to access collections and iterators
+    associated with the namespace class.
+
+    >>> SimpleNS._field_names
+    ('id', 'name', 'description')
+
+    >>> tuple(SimpleNS._field_names_iter)
+    ('id', 'name', 'description')
 
     Once the class has been created, it can be instantiated like any
     other class. However, a value for all of the required fields must
@@ -118,7 +127,7 @@ def namedspace(typename, required_fields=(), optional_fields=(), mutable_fields=
     OrderedDict, so order of the collections is the same as the order
     that the fields were specified.
 
-    All of these properties use the standard "protected" naming
+    All of these properties use the standard "non-public" naming
     convention in order to not pollute the public namespace.
 
     >>> simple_ns._field_names
@@ -143,7 +152,7 @@ def namedspace(typename, required_fields=(), optional_fields=(), mutable_fields=
     OrderedDict([('id', 1), ('name', 'Simple Name'), ('description', 'Simple Description')])
 
 
-    Here is a more complex example, using all of the arguments:
+    Here is a more complex example, using most of the other arguments:
 
     >>> from itertools import count
 
@@ -199,7 +208,31 @@ def namedspace(typename, required_fields=(), optional_fields=(), mutable_fields=
         <snip/>
     AttributeError: "Field 'extra' does not yet exist in this ComplexNS namedspace instance."
 
-    Since it one of the mutable fields, we can give it a value.
+    Sometimes, having an exception raised if an optional field is
+    missing, and being forced to handle it, is annoying. A namedspace
+    class can be configured at creation time to return None instead of
+    raising exceptions for optional fields by setting the `return_none`
+    parameter to `True`. Here is a trivial example:
+
+    >>> QuietNS = namedspace("QuietNS", optional_fields=("might_be_none",), return_none=True)
+
+    >>> quiet_ns1 = QuietNS(might_be_none="Nope, not this time")
+    >>> quiet_ns1.might_be_none
+    'Nope, not this time'
+
+    >>> quiet_ns2 = QuietNS()
+    >>> quiet_ns2.might_be_none
+    >>>
+
+    Having the namedspace quietly return `None` makes sense in some
+    situations. But be careful. Understand the full implications of
+    this alternate behavior on the code that uses it. Subtle data-
+    dependent bugs can be introduced by this behavior, which is why it
+    is not enabled by default.
+
+    Now, back to our "complex" example.
+
+    Since the 'extra' field is one of the mutable fields, we can give it a value.
 
     >>> complex_ns1.extra = "Lasts a long, long time"
     >>> complex_ns1.extra
@@ -220,6 +253,41 @@ def namedspace(typename, required_fields=(), optional_fields=(), mutable_fields=
     >>> complex_ns2 = ComplexNS()
     >>> complex_ns2.id
     2
+
+    A common use case for a namedspace class is as a base class for
+    another custom class that has additional members such as properties
+    and methods. This way, the custom class gets all of the namedspace
+    behavior through declarative configuration, instead of having
+    to re-define that behavior imperatively.
+
+    Here is a (fairly contrived) example:
+
+    >>> from collections import Counter, OrderedDict
+    >>> _Widget = namedspace("_Widget", ("mfg_code", "model_code", "serial_number"), optional_fields=("sku", "pk"),
+    ...         return_none=True)
+    >>> class Widget(_Widget):
+    ...     _sn_map = Counter()
+    ...     def __init__(self, *args, **kwargs):
+    ...         sn_key = (kwargs["mfg_code"], kwargs["model_code"])
+    ...         self._sn_map[sn_key] += 1
+    ...         kwargs["serial_number"] = "{:010}".format(self._sn_map[sn_key])
+    ...         super(Widget, self).__init__(*args, **kwargs)
+    ...     @property
+    ...     def sku(self):
+    ...         return "{}_{}".format(self.mfg_code, self.model_code)
+    ...     @property
+    ...     def pk(self):
+    ...         return "{}_{}".format(self.sku, self.serial_number)
+    >>> widget1 = Widget(mfg_code="ACME", model_code="X-500")
+    >>> widget1
+    Widget(mfg_code='ACME', model_code='X-500', serial_number='0000000001', sku='ACME_X-500', pk='ACME_X-500_0000000001')
+    >>> widget1._as_dict
+    OrderedDict([('mfg_code', 'ACME'), ('model_code', 'X-500'), ('serial_number', '0000000001'), ('sku', 'ACME_X-500'), ('pk', 'ACME_X-500_0000000001')])
+    >>> widget2 = Widget(mfg_code="ACME", model_code="X-500")
+    >>> widget2
+    Widget(mfg_code='ACME', model_code='X-500', serial_number='0000000002', sku='ACME_X-500', pk='ACME_X-500_0000000002')
+    >>> widget2._as_dict
+    OrderedDict([('mfg_code', 'ACME'), ('model_code', 'X-500'), ('serial_number', '0000000002'), ('sku', 'ACME_X-500'), ('pk', 'ACME_X-500_0000000002')])
     """
 
     # Initialize the list of arguments that will get put into the
@@ -302,6 +370,7 @@ def namedspace(typename, required_fields=(), optional_fields=(), mutable_fields=
         MutableMapping=MutableMapping,
         OrderedDict=OrderedDict,
         return_none=return_none,
+        NamedspaceMeta=NamedspaceMeta,
         )
 
     #
@@ -324,8 +393,22 @@ def namedspace(typename, required_fields=(), optional_fields=(), mutable_fields=
 
     return result
 
+
+class NamedspaceMeta(type):
+    "Metaclass for namedspace classes"
+
+    @property
+    def _field_names(self):
+        return self._all_fields
+
+    @property
+    def _field_names_iter(self):
+        return iter(self._all_fields)
+
+
 _class_template = """\
 class {typename}(object):
+    __metaclass__ = NamedspaceMeta
     "{typename}({arg_list})"
 
     class FieldNameError(AttributeError, KeyError): pass
@@ -351,7 +434,7 @@ class {typename}(object):
                 raise ValueError("field '{{field_name}} does not exist in the {typename} namedspace.".format(
                         field_name=field_name))
 
-        for field_name in self._all_fields:
+        for field_name in self._field_names:
             try:
                 field_value = self._get_value(field_name)
             except self.FieldNameError:
@@ -364,7 +447,8 @@ class {typename}(object):
 
     def __repr__(self):
         'Return a nicely formatted representation string'
-        return '{typename}({{items}})'.format(items=", ".join("{{name}}={{value!r}}".format(name=name, value=value)
+        return '{{clsname}}({{items}})'.format(clsname=self.__class__.__name__,
+            items=", ".join("{{name}}={{value!r}}".format(name=name, value=value)
                 for name, value in self._field_items))
 
     #
@@ -415,15 +499,15 @@ class {typename}(object):
     #
     @property
     def _field_names(self):
-        return self._all_fields
+        return self.__class__._field_names
 
     @property
     def _field_names_iter(self):
-        return iter(self._all_fields)
+        return self.__class__._field_names_iter
 
     @property
     def _field_values_iter(self):
-        for field_name in self._all_fields:
+        for field_name in self._field_names:
             yield getattr(self, field_name, None)
 
     @property
@@ -432,7 +516,7 @@ class {typename}(object):
 
     @property
     def _field_items_iter(self):
-        for field_name in self._all_fields:
+        for field_name in self._field_names:
             yield (field_name, getattr(self, field_name, None))
 
     @property
@@ -461,7 +545,6 @@ class {typename}(object):
 
     def __delattr__(self, attr_name):
         return self._del_value(attr_name)
-
 
     #
     # Hashable API

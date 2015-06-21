@@ -110,6 +110,9 @@ class NamedspaceTests(TestCase):
         self.assertEqual(self.test_ns1._field_names,
             ("id", "name", "description", "extra"))
 
+        self.assertEqual(tuple(self.test_ns1._field_names_iter),
+            ("id", "name", "description", "extra"))
+
     def test_field_values(self):
         """
         The _field_values property should return the correct values.
@@ -121,6 +124,13 @@ class NamedspaceTests(TestCase):
                 self.test_ns1.extra,
             )))
 
+        self.assertEqual(frozenset(self.test_ns1._field_values_iter), frozenset((
+            self.test_ns1.id,
+            self.test_ns1.name,
+            getattr(self.test_ns1, "description", None),
+            self.test_ns1.extra,
+        )))
+
     def test_field_items(self):
         """
         The _field_items property should return the correct values.
@@ -131,6 +141,13 @@ class NamedspaceTests(TestCase):
                 ("description", getattr(self.test_ns1, "description", None)),
                 ("extra", self.test_ns1.extra),
             ])
+
+        self.assertEqual(list(self.test_ns1._field_items_iter), [
+            ("id", self.test_ns1.id),
+            ("name", self.test_ns1.name),
+            ("description", getattr(self.test_ns1, "description", None)),
+            ("extra", self.test_ns1.extra),
+        ])
 
     def test_return_none(self):
         """
@@ -170,3 +187,12 @@ class SubNamedspaceTests(TestCase):
         """
         self.assertIn(SubNamedspace._name_tmpl.format(id=self.mock_id),
             self.test_ns1._field_values)
+
+    def test_subclass_repr(self):
+        """
+        Subclass __repr__() result should contain the subclass name, not
+        the namedspace class name.
+        """
+        repr_result = repr(self.test_ns1)
+        self.assertNotIn("_SubNamedspace", repr_result)
+        self.assertIn("SubNamedspace", repr_result)
