@@ -1,6 +1,16 @@
 
 namedspace release notes
 ========================
+1.2.0
+=====
+* Make _field_names and _field_names_iter properties available
+  directly on the namedspace class.
+* Added subclass example documentation.
+* Added documentation for return_none parameter.
+* Fix __repr__ method so that it properly displays subclass name.
+* Fixed documentation to include return_none parameter.
+* Added documentation link in README file.
+
 1.1.1
 =====
 * Added LICENSE file.
